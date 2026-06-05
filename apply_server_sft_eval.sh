@@ -91,5 +91,6 @@ echo "NUM_GPUS=${NUM_GPUS}"
 echo "TP=${TP}"
 echo "TENSOR_PARALLEL_SIZE=${TENSOR_PARALLEL_SIZE}"
 echo "SFT_EVAL_OUT_ROOT=${SFT_EVAL_OUT_ROOT:-${REPO_ROOT}/sft_eval_outputs}"
+echo "SFT_RESULTS_DIR=${SFT_RESULTS_DIR:-${REPO_ROOT}/../sft/sft_3epoch}"
 
 bash "${PIPELINE_SH}"
