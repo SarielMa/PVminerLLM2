@@ -182,4 +182,8 @@ models:
   Llama-3.2-3B-Instruct, Llama-3.1-8B-Instruct and Llama-3.3-70B-Instruct
   respectively, and are subject to the Llama Community License. Built with Llama.
 
+Preference-optimized models derived from Qwen3.5-9B and Qwen3.8-27B are in
+preparation. Both base models are released under the Apache 2.0 License, and
+the derived weights will be released under the same terms.
+
 The PV-Miner data are not distributed with this repository.
