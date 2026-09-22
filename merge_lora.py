@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer
 from peft import PeftModel
+
+from pv_model_compat import load_decoder_lm, dtype_kwargs
 
 def main():
     ap = argparse.ArgumentParser()
@@ -15,7 +17,7 @@ def main():
     dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[args.dtype]
 
     tok = AutoTokenizer.from_pretrained(args.base, use_fast=True)
-    model = AutoModelForCausalLM.from_pretrained(args.base, torch_dtype=dtype, device_map="auto")
+    model = load_decoder_lm(args.base, device_map="auto", **dtype_kwargs(dtype))
 
     model = PeftModel.from_pretrained(model, args.adapter)
     model = model.merge_and_unload()  # <-- key

@@ -32,6 +32,7 @@ from datasets import load_from_disk
 from vllm import LLM, SamplingParams
 
 import pv_utils  # ensure pv_utils.py is in same folder or on PYTHONPATH
+from pv_model_compat import render_prompt, strip_thinking
 
 
 # -----------------------------
@@ -165,6 +166,16 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
 
     ap.add_argument("--include_none", action="store_true")
+    ap.add_argument(
+        "--prompt_mode", type=str, default="raw", choices=["raw", "chat"],
+        help="raw sends ex['query'] verbatim (original behaviour); chat applies "
+             "the tokenizer chat template. Use chat for the Qwen3.5 family so the "
+             "confusion pairs are built from the same prompt format used at eval.")
+    ap.add_argument(
+        "--enable_thinking", action="store_true",
+        help="Allow hybrid-reasoning models to emit <think> blocks. Off by default: "
+             "reasoning text would consume the token budget before the JSON.")
+    ap.add_argument("--system_prompt", type=str, default=None)
     args = ap.parse_args()
 
     ds = load_from_disk(args.data)
@@ -179,7 +190,14 @@ def main():
         seed=args.seed,
     )
 
-    prompts: List[str] = [ex["query"] for ex in ds]
+    tokenizer = llm.get_tokenizer()
+    prompts: List[str] = [
+        render_prompt(tokenizer, ex["query"],
+                      system_prompt=args.system_prompt,
+                      mode=args.prompt_mode,
+                      enable_thinking=args.enable_thinking)
+        for ex in ds
+    ]
     gold_answers: List[Any] = [ex["answer"] for ex in ds]
 
     outs = llm.generate(prompts, sp)
@@ -193,6 +211,7 @@ def main():
 
     for i, (gold, out) in enumerate(zip(gold_answers, outs)):
         pred_text = out.outputs[0].text if out.outputs else ""
+        pred_text = strip_thinking(pred_text)
 
         gold_codes, gold_subs = extract_sets_from_text(gold)
         pred_codes, pred_subs = extract_sets_from_text(pred_text)
