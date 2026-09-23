@@ -15,8 +15,6 @@ RESULTS_ROOT="${RESULTS_ROOT:-$(readlink -f "${REPO_ROOT}/results")}"
 # Default to the local HF dataset discovered in the sibling benchmark tree.
 DATA_DIR="${DATA_DIR:-$(readlink -f "${REPO_ROOT}/../benckmark/PV_benckmark/split_out/non_test/training")}"
 
-# Only needed for the final lm_eval step.
-FINBEN_TASKS_PATH="${FINBEN_TASKS_PATH:-/home/lm2445/project_pi_sjf37/lm2445/finben/FinBen/tasks/pv_miner}"
 
 # Label only: this never reaches a trainer. SFT runs 10 epochs
 # (sft_epoch10_raw2shot_to_finben_b200.sh) and preference training runs 3
@@ -99,12 +97,11 @@ for MODEL in "${MODELS[@]}"; do
   PRED_DIR="${OUT_ROOT}/pred"
   PREFERENCE_DATA_DIR="${OUT_ROOT}/preference_data"
   PREFERENCE_RUNS_DIR="${OUT_ROOT}/preference_runs"
-  EVAL_DIR="${RESULTS_ROOT}/${OUT_TAG}/lm_eval_results"
-  FINBEN_OUT="${EVAL_DIR}/PvExtraction_full"
+  EVAL_DIR="${RESULTS_ROOT}/${OUT_TAG}/eval_results"
 
-  mkdir -p "${CONF_DIR}" "${PRED_DIR}" "${PREFERENCE_DATA_DIR}" "${PREFERENCE_RUNS_DIR}" "${EVAL_DIR}" "${FINBEN_OUT}"
+  mkdir -p "${CONF_DIR}" "${PRED_DIR}" "${PREFERENCE_DATA_DIR}" "${PREFERENCE_RUNS_DIR}" "${EVAL_DIR}"
 
-  FINBEN_OUT="$(readlink -f "${FINBEN_OUT}")"
+  EVAL_DIR="$(readlink -f "${EVAL_DIR}")"
 
   CODE_CONF_CSV="${CONF_DIR}/code_confusion_summary.csv"
   SUBCODE_CONF_CSV="${CONF_DIR}/subcode_confusion_summary.csv"
@@ -120,11 +117,9 @@ for MODEL in "${MODELS[@]}"; do
   if is_qwen35 "${MODEL_TAG}"; then
     INFER_EXTRA=(--prompt_mode chat)
     TRAIN_EXTRA=(--lora_target_modules auto)
-    EVAL_THINKING=",enable_thinking=False"
   else
     INFER_EXTRA=()
     TRAIN_EXTRA=()
-    EVAL_THINKING=""
   fi
 
   echo "============================================================"
@@ -182,22 +177,14 @@ for MODEL in "${MODELS[@]}"; do
     --dtype bf16
 
   # =========================
-  # 5) Eval (lm_eval + vLLM)
+  # 5) Eval (0-shot, chat template, greedy; thinking off)
   # =========================
-  if [[ -d "${FINBEN_TASKS_PATH}" ]]; then
-    lm_eval --model vllm \
-      --model_args "pretrained=${MERGED_DIR},tensor_parallel_size=${TENSOR_PARALLEL_SIZE},gpu_memory_utilization=${GPU_MEM_UTIL},max_model_len=${MAX_MODEL_LEN}${EVAL_THINKING}" \
-      --tasks PvExtraction_full \
-      --num_fewshot 0 \
-      --batch_size auto \
-      --output_path "${FINBEN_OUT}" \
-      --log_samples \
-      --apply_chat_template \
-      --include_path "${FINBEN_TASKS_PATH}"
-  else
-    echo "WARNING: FINBEN_TASKS_PATH not found, skipping lm_eval:"
-    echo "  ${FINBEN_TASKS_PATH}"
-  fi
+  python evaluate_pv.py \
+    --model "${MERGED_DIR}" \
+    --out_dir "${EVAL_DIR}" \
+    --tp "${TENSOR_PARALLEL_SIZE}" \
+    --max_model_len "${MAX_MODEL_LEN}" \
+    --gpu_memory_utilization "${GPU_MEM_UTIL}"
 
   echo "✔ DONE: ${MODEL_TAG}"
 done

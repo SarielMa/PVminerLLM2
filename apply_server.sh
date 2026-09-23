@@ -13,6 +13,9 @@ set -euo pipefail
 
 REPO_ROOT="/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2"
 PIPELINE_SH="${REPO_ROOT}/pipeline_from_confusion_to_eval_all.sh"
+# finben_b200 (vLLM 0.11 / transformers 4.57) runs the existing models.
+# Qwen3.5-9B / Qwen3.8-27B need CONDA_ENV=finben_qwen35 (vLLM 0.30 / transformers 5).
+CONDA_ENV="${CONDA_ENV:-finben_b200}"
 
 for var in CONDA_EXE CONDA_PREFIX CONDA_PREFIX_1 CONDA_PREFIX_2 CONDA_DEFAULT_ENV CONDA_PROMPT_MODIFIER CONDA_SHLVL CONDA_PYTHON_EXE CONDA_PKGS_DIRS CONDA_ENVS_PATH _CE_CONDA _CE_M _CONDA_EXE _CONDA_ROOT; do
   unset "${var}" || true
@@ -58,7 +61,16 @@ else
   exit 1
 fi
 
-conda activate finben_b200
+conda activate "${CONDA_ENV}"
+
+# The env ships a newer libstdc++ than the nodes (/lib64 tops out at
+# CXXABI_1.3.13; finben_qwen35 pulls in libicui18n.so.78, which needs
+# CXXABI_1.3.15). LD_LIBRARY_PATH is set above, before activation, so the
+# env lib was not on it -- vLLM's registry subprocess then died on an
+# ImportError and surfaced as a bogus ModelConfig ValidationError.
+if [[ -f "${CONDA_PREFIX}/lib/libstdc++.so.6" ]]; then
+  export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+fi
 
 which nvcc
 nvcc --version
@@ -85,6 +97,7 @@ export NUM_GPUS
 export TENSOR_PARALLEL_SIZE="${NUM_GPUS}"
 
 echo "REPO_ROOT=${REPO_ROOT}"
+echo "CONDA_ENV=${CONDA_ENV}"
 echo "PIPELINE_SH=${PIPELINE_SH}"
 echo "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-<unset>}"
 echo "NUM_GPUS=${NUM_GPUS}"
