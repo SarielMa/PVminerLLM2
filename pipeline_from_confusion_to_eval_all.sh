@@ -38,6 +38,11 @@ PRINT_SAMPLES=3
 # =========================
 # LOCAL SFT MODELS
 # =========================
+# Override with a space-separated list of SFT model dirs, e.g.
+# MODELS="${SFT_RESULTS_ROOT}/PVminerLLM_qwen3.5_9b". The dir basename is the tag.
+if [[ -n "${MODELS:-}" ]]; then
+  read -r -a MODELS <<< "${MODELS}"
+else
 MODELS=(
   "${REPO_ROOT}/PVminerLLM_70b_llama3.3_instruct"
   "${REPO_ROOT}/PVminerLLM_8b_llama3.1_instruct"
@@ -49,6 +54,7 @@ MODELS=(
   "${SFT_RESULTS_ROOT:-${REPO_ROOT}}/PVminerLLM_qwen3.5_9b"
   "${SFT_RESULTS_ROOT:-${REPO_ROOT}}/PVminerLLM_qwen3.8_27b"
 )
+fi
 
 # Models whose linear-attention layers expose in_proj_*/out_proj instead of
 # q_proj/k_proj/v_proj/o_proj, and whose chat template opens a <think> block

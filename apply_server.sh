@@ -71,6 +71,13 @@ conda activate "${CONDA_ENV}"
 if [[ -f "${CONDA_PREFIX}/lib/libstdc++.so.6" ]]; then
   export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 fi
+# CUDA 13 torch finds its pip-installed CUDA libs itself, but bitsandbytes'
+# libbitsandbytes_cuda130.so needs them on the loader path (libnvJitLink.so.13 etc.).
+# No-op for the CUDA 12 env.
+_CU13_LIB="$(python -c 'import nvidia, os; print(os.path.join(list(nvidia.__path__)[0], "cu13", "lib"))' 2>/dev/null || true)"
+if [[ -n "${_CU13_LIB}" && -d "${_CU13_LIB}" ]]; then
+  export LD_LIBRARY_PATH="${_CU13_LIB}:${LD_LIBRARY_PATH:-}"
+fi
 
 which nvcc
 nvcc --version

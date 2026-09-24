@@ -17,6 +17,7 @@ Key fixes vs your pasted version:
 
 import os
 import re
+import inspect
 import json
 import argparse
 from dataclasses import dataclass
@@ -758,7 +759,11 @@ def main():
         per_device_train_batch_size=cfg.per_device_train_batch_size,
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
         learning_rate=cfg.learning_rate,
-        warmup_ratio=cfg.warmup_ratio,
+        # transformers 5 dropped `warmup_ratio`; a float < 1 in `warmup_steps`
+        # is read as the same ratio of total steps.
+        **({"warmup_ratio": cfg.warmup_ratio}
+           if "warmup_ratio" in inspect.signature(TrainingArguments.__init__).parameters
+           else {"warmup_steps": cfg.warmup_ratio}),
         max_grad_norm=cfg.max_grad_norm,
         bf16=True,
         logging_steps=cfg.logging_steps,
@@ -782,7 +787,10 @@ def main():
         train_dataset=train_ds,
         eval_dataset=valid_ds,
         data_collator=collator,
-        tokenizer=tok,
+        # transformers 5 removed `tokenizer=` (renamed `processing_class=` in 4.46).
+        **({"processing_class": tok}
+           if "processing_class" in inspect.signature(Trainer.__init__).parameters
+           else {"tokenizer": tok}),
         cfg=cfg,
     )
 
