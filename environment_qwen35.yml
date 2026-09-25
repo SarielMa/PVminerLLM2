@@ -1,0 +1,25 @@
+# Environment for Qwen3.5-9B / Qwen3.8-27B (needs transformers 5 and vLLM 0.30,
+# which add the qwen3_5 architecture). Linux + NVIDIA GPU with CUDA 13 drivers.
+name: pvminer_qwen35
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu130
+      - torch==2.13.0
+      - transformers==5.17.0
+      - vllm==0.30.0
+      - peft==0.18.1
+      - accelerate==1.13.0
+      - bitsandbytes==0.49.2
+      - datasets==4.3.0
+      - huggingface_hub==1.32.0
+      - tokenizers==0.23.2
+      - safetensors==0.8.0
+      - sentencepiece==0.2.1
+      - numpy==2.2.6
+      - pandas==3.0.1
+      - scikit-learn==1.8.0
+      - lm-eval==0.4.11

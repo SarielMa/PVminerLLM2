@@ -30,7 +30,6 @@ import time
 from typing import Any, Dict, List
 
 import pv_utils
-from pv_model_compat import render_prompt, strip_thinking
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DATA = os.path.normpath(
@@ -71,6 +70,8 @@ def encode(tok, prompt: str) -> List[int]:
 def generate(args) -> List[Dict[str, Any]]:
     from datasets import load_from_disk
     from vllm import LLM, SamplingParams
+
+    from pv_model_compat import render_prompt, strip_thinking
 
     ds = load_from_disk(args.data)
     if args.max_samples:

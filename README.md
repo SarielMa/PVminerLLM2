@@ -19,13 +19,13 @@ Trained models are available on Hugging Face:
 
 ## Repository Structure
 
-- [infer_vllm_and_confusion.py](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/infer_vllm_and_confusion.py): runs vLLM inference on a Hugging Face dataset saved with `load_from_disk`, parses structured outputs, and writes code/sub-code confusion CSVs.
-- [prepare_preference_data.py](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/prepare_preference_data.py): builds targeted preference pairs using observed confusion patterns.
-- [train_preference.py](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/train_preference.py): trains a token-weighted preference objective with LoRA adapters.
-- [merge_lora.py](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/merge_lora.py): merges a trained LoRA adapter into the base model.
-- [pv_utils.py](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/pv_utils.py): utilities for parsing structured outputs and computing code, sub-code, and span metrics.
-- [pipeline_from_confusion_to_eval_all.sh](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/pipeline_from_confusion_to_eval_all.sh): end-to-end pipeline across the local SFT models in this repository.
-- [apply_server.sh](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/apply_server.sh): example SLURM submission script for running the pipeline on GPU nodes.
+- [infer_vllm_and_confusion.py](infer_vllm_and_confusion.py): runs vLLM inference on a Hugging Face dataset saved with `load_from_disk`, parses structured outputs, and writes code/sub-code confusion CSVs.
+- [prepare_preference_data.py](prepare_preference_data.py): builds targeted preference pairs using observed confusion patterns.
+- [train_preference.py](train_preference.py): trains a token-weighted preference objective with LoRA adapters.
+- [merge_lora.py](merge_lora.py): merges a trained LoRA adapter into the base model.
+- [pv_utils.py](pv_utils.py): utilities for parsing structured outputs and computing code, sub-code, and span metrics.
+- [pipeline_from_confusion_to_eval_all.sh](pipeline_from_confusion_to_eval_all.sh): end-to-end pipeline across the local SFT models in this repository.
+- [apply_server.sh](apply_server.sh): example SLURM submission script for running the pipeline on GPU nodes.
 
 ## Expected Data Format
 
@@ -86,14 +86,28 @@ handles for both versions.
 
 ## Environment
 
-An example Conda environment is provided in [environment.yml](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/environment.yml).
+Each stack in the table above has its own Conda file (Linux + NVIDIA GPU only):
 
 ```bash
+# Llama-3.x / Qwen2.5 models
 conda env create -f environment.yml
-conda activate finben_vllm3
+conda activate pvminer
+
+# Qwen3.5-9B / Qwen3.8-27B
+conda env create -f environment_qwen35.yml
+conda activate pvminer_qwen35
 ```
 
-Core dependencies used by the pipeline include `transformers`, `datasets`, `peft`, `torch`, `vllm`, `scikit-learn`, and `lm-eval`.
+The SLURM launchers pick the environment through `CONDA_ENV`, for example
+`CONDA_ENV=pvminer_qwen35 sbatch apply_server.sh`.
+
+On macOS or a machine without a GPU, only the scoring code can run. Install
+the pure-Python dependencies and re-score a prediction file:
+
+```bash
+pip install scikit-learn
+python evaluate_pv.py --score_only path/to/preds.jsonl --out_dir scores/
+```
 
 ## Minimal Workflow
 
@@ -150,7 +164,7 @@ For batch execution over the local models included in this repository, use:
 bash pipeline_from_confusion_to_eval_all.sh
 ```
 
-The SLURM launcher in [apply_server.sh](/nfs/roberts/project/pi_sjf37/lm2445/PV_multiagent/PVminerLLM2/apply_server.sh) shows one way to run this pipeline on a multi-GPU cluster environment.
+The SLURM launcher in [apply_server.sh](apply_server.sh) shows one way to run this pipeline on a multi-GPU cluster environment.
 
 ## Notes
 
