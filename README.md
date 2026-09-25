@@ -59,10 +59,6 @@ GPUs**. vLLM and bitsandbytes do not support macOS or CPU-only execution, so the
 pipeline scripts will not run on a Mac. The reported runs used 2 x NVIDIA B200
 with CUDA 12.8; smaller models can be run on a single GPU by setting `TP=1`.
 
-`pv_utils.py` and the evaluation metrics are pure Python (`json`, `re`,
-`scikit-learn`) and can be imported and run on any platform, which is enough to
-re-score existing prediction dumps without a GPU.
-
 ### Software environments
 
 Two environments are required, because the Qwen3.5 family needs a newer stack
@@ -100,14 +96,6 @@ conda activate pvminer_qwen35
 
 The SLURM launchers pick the environment through `CONDA_ENV`, for example
 `CONDA_ENV=pvminer_qwen35 sbatch apply_server.sh`.
-
-On macOS or a machine without a GPU, only the scoring code can run. Install
-the pure-Python dependencies and re-score a prediction file:
-
-```bash
-pip install scikit-learn
-python evaluate_pv.py --score_only path/to/preds.jsonl --out_dir scores/
-```
 
 ## Minimal Workflow
 
